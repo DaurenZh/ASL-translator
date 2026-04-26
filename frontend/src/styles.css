@@ -1,0 +1,186 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #17201b;
+  background: #f6f7f4;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #cdd5cf;
+  border-radius: 8px;
+  color: #17201b;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #edf2ee;
+}
+
+.shell {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.cameraPane {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #111614;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  object-fit: cover;
+}
+
+.statusBar {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #ffffff;
+  background: rgba(10, 14, 12, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.statusBar strong {
+  font-size: 28px;
+}
+
+.panel {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: 22px;
+  padding: 24px;
+  border-left: 1px solid #dfe5df;
+  background: #ffffff;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 760;
+}
+
+.prediction {
+  display: grid;
+  gap: 10px;
+}
+
+.prediction span,
+.slider span {
+  color: #5b675f;
+  font-size: 13px;
+}
+
+.prediction strong {
+  font-size: 72px;
+  line-height: 1;
+}
+
+meter {
+  width: 100%;
+  height: 12px;
+}
+
+.sentence {
+  min-height: 140px;
+  padding: 16px;
+  border: 1px solid #dfe5df;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+  color: #17201b;
+  background: #f8faf8;
+  font-size: 26px;
+  line-height: 1.35;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar svg {
+  width: 20px;
+  height: 20px;
+}
+
+.slider,
+.toggle {
+  display: grid;
+  gap: 10px;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+.toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.topList {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.topList div {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf1ed;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .cameraPane {
+    min-height: 52vh;
+  }
+
+  video {
+    min-height: 52vh;
+  }
+
+  .panel {
+    min-height: auto;
+    border-left: 0;
+    border-top: 1px solid #dfe5df;
+  }
+
+  .prediction strong {
+    font-size: 56px;
+  }
+}
+
