@@ -16,7 +16,7 @@ from torchvision import datasets, transforms
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 
-from model import ASLModel  # noqa: E402
+from model import create_model  # noqa: E402
 
 
 def seed_everything(seed: int):
@@ -191,6 +191,10 @@ def evaluate_predictions(model, loader, device, classes):
     }
 
 
+def count_parameters(model):
+    return sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
+
+
 def train(args):
     seed_everything(args.seed)
 
@@ -214,7 +218,11 @@ def train(args):
     )
 
     device = get_device()
-    model = ASLModel(num_classes=len(classes)).to(device)
+    model = create_model(
+        args.architecture,
+        num_classes=len(classes),
+        pretrained=args.pretrained,
+    ).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -226,6 +234,8 @@ def train(args):
 
     print(f"Dataset: {dataset_path}")
     print(f"Classes ({len(classes)}): {classes}")
+    print(f"Architecture: {args.architecture}")
+    print(f"Trainable parameters: {count_parameters(model):,}")
     print(f"Device: {device}")
     print(f"Saving best checkpoint to: {output_path}")
 
@@ -272,7 +282,8 @@ def train(args):
         "model_state_dict": model.state_dict(),
         "classes": classes,
         "img_size": args.img_size,
-        "architecture": "ASLModel",
+        "architecture": args.architecture,
+        "pretrained": args.pretrained,
         "normalization": {
             "mean": [0.485, 0.456, 0.406],
             "std": [0.229, 0.224, 0.225],
@@ -284,6 +295,9 @@ def train(args):
         "dataset": str(dataset_path),
         "output": str(output_path),
         "classes": classes,
+        "architecture": args.architecture,
+        "pretrained": args.pretrained,
+        "trainable_parameters": count_parameters(model),
         "best_val_accuracy": round(best_val_accuracy, 4),
         "test": test_metrics,
         "history": history,
@@ -299,6 +313,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train the ASL translator image classifier.")
     parser.add_argument("--dataset", required=True, help="Path to ASL ImageFolder dataset or its parent folder.")
     parser.add_argument("--output", help="Checkpoint output path. Defaults to models/asl_model.pt.")
+    parser.add_argument(
+        "--architecture",
+        default="simple_cnn",
+        choices=["simple_cnn", "resnet18", "mobilenet_v3_small"],
+        help="Model architecture to train.",
+    )
+    parser.add_argument("--pretrained", action="store_true", help="Use ImageNet pretrained weights when available.")
     parser.add_argument("--epochs", type=int, default=12)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--img-size", type=int, default=96)

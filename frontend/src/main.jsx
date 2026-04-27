@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Camera, Copy, Pause, Play, RotateCcw, Trash2, Volume2 } from "lucide-react";
+import { Camera, Copy, ImageUp, Pause, Play, RotateCcw, Trash2, Volume2 } from "lucide-react";
 import "./styles.css";
 
 const API_URL = "http://localhost:8000";
@@ -8,6 +8,7 @@ const API_URL = "http://localhost:8000";
 function App() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const fileRef = useRef(null);
   const streamRef = useRef(null);
   const lastAcceptedRef = useRef("");
   const [running, setRunning] = useState(false);
@@ -16,6 +17,8 @@ function App() {
   const [threshold, setThreshold] = useState(0.85);
   const [voice, setVoice] = useState(false);
   const [status, setStatus] = useState("idle");
+  const [uploadedImage, setUploadedImage] = useState("");
+  const [uploadResult, setUploadResult] = useState(null);
 
   async function startCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
@@ -66,6 +69,36 @@ function App() {
     } catch {
       setStatus("api offline");
     }
+  }
+
+  async function predictImageData(image) {
+    const response = await fetch(`${API_URL}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ image }),
+    });
+    return response.json();
+  }
+
+  async function handleUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const image = reader.result;
+      setUploadedImage(image);
+      setStatus("uploading");
+      try {
+        const result = await predictImageData(image);
+        setUploadResult(result);
+        setCurrent(result);
+        setStatus(result.ready ? "upload result" : "model missing");
+      } catch {
+        setStatus("api offline");
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   useEffect(() => {
@@ -126,7 +159,21 @@ function App() {
           <button title="Reset current sign" onClick={() => { lastAcceptedRef.current = ""; setCurrent({ label: "-", confidence: 0, predictions: [] }); }}>
             <RotateCcw />
           </button>
+          <button title="Upload image" onClick={() => fileRef.current?.click()}>
+            <ImageUp />
+          </button>
         </div>
+
+        <input ref={fileRef} className="fileInput" type="file" accept="image/*" onChange={handleUpload} />
+
+        <section className="uploadBox">
+          {uploadedImage ? <img src={uploadedImage} alt="Uploaded hand sign" /> : <div className="emptyUpload">Upload sample</div>}
+          <div>
+            <span>Uploaded result</span>
+            <strong>{uploadResult?.label || "-"}</strong>
+            <p>{Math.round((uploadResult?.confidence || 0) * 100)}%</p>
+          </div>
+        </section>
 
         <label className="slider">
           <span>Sensitivity {Math.round(threshold * 100)}%</span>
@@ -159,4 +206,3 @@ function App() {
 }
 
 createRoot(document.getElementById("root")).render(<App />);
-

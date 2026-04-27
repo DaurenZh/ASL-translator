@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 from PIL import Image
-from torchvision import transforms
+from torchvision import models, transforms
 
 
 DEFAULT_CLASSES = [
@@ -13,7 +13,7 @@ DEFAULT_CLASSES = [
 ]
 
 
-class ASLModel(nn.Module):
+class SimpleCNN(nn.Module):
     def __init__(self, num_classes: int = 29):
         super().__init__()
         self.features = nn.Sequential(
@@ -41,20 +41,56 @@ class ASLModel(nn.Module):
         return self.classifier(x)
 
 
+ASLModel = SimpleCNN
+
+
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
+def create_model(architecture: str, num_classes: int, pretrained: bool = False):
+    if architecture in {"simple_cnn", "ASLModel"}:
+        return SimpleCNN(num_classes=num_classes)
+
+    if architecture == "resnet18":
+        weights = models.ResNet18_Weights.DEFAULT if pretrained else None
+        model = models.resnet18(weights=weights)
+        model.fc = nn.Linear(model.fc.in_features, num_classes)
+        return model
+
+    if architecture == "mobilenet_v3_small":
+        weights = models.MobileNet_V3_Small_Weights.DEFAULT if pretrained else None
+        model = models.mobilenet_v3_small(weights=weights)
+        in_features = model.classifier[-1].in_features
+        model.classifier[-1] = nn.Linear(in_features, num_classes)
+        return model
+
+    raise ValueError(
+        f"Unknown architecture '{architecture}'. "
+        "Use one of: simple_cnn, resnet18, mobilenet_v3_small."
+    )
+
+
 class ASLClassifier:
     def __init__(self, checkpoint_path: str = "../models/asl_model.pt"):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = get_device()
         self.checkpoint_path = Path(checkpoint_path).resolve()
         self.classes = DEFAULT_CLASSES
         self.img_size = 96
-        self.model = ASLModel(num_classes=len(self.classes)).to(self.device)
+        self.architecture = "simple_cnn"
+        self.model = create_model(self.architecture, num_classes=len(self.classes)).to(self.device)
         self.ready = False
 
         if self.checkpoint_path.exists():
             checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
             self.classes = checkpoint.get("classes", self.classes)
             self.img_size = checkpoint.get("img_size", self.img_size)
-            self.model = ASLModel(num_classes=len(self.classes)).to(self.device)
+            self.architecture = checkpoint.get("architecture", self.architecture)
+            self.model = create_model(self.architecture, num_classes=len(self.classes)).to(self.device)
             self.model.load_state_dict(checkpoint["model_state_dict"])
             self.ready = True
 
@@ -100,4 +136,3 @@ class ASLClassifier:
             "confidence": predictions[0]["confidence"],
             "predictions": predictions,
         }
-

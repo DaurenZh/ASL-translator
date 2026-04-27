@@ -132,6 +132,58 @@ meter {
   height: 20px;
 }
 
+.fileInput {
+  display: none;
+}
+
+.uploadBox {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #dfe5df;
+  border-radius: 8px;
+  background: #fbfcfb;
+}
+
+.uploadBox img,
+.emptyUpload {
+  width: 96px;
+  height: 96px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #edf2ee;
+}
+
+.emptyUpload {
+  display: grid;
+  place-items: center;
+  color: #6a756e;
+  font-size: 13px;
+  text-align: center;
+}
+
+.uploadBox div:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.uploadBox span {
+  color: #5b675f;
+  font-size: 13px;
+}
+
+.uploadBox strong {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.uploadBox p {
+  margin: 0;
+  color: #5b675f;
+}
+
 .slider,
 .toggle {
   display: grid;
@@ -183,4 +235,3 @@ input[type="range"] {
     font-size: 56px;
   }
 }
-
