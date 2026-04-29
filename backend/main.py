@@ -15,6 +15,7 @@ classifier = ASLClassifier()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+):5173",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,4 +47,3 @@ def predict(payload: PredictionRequest):
         raise HTTPException(status_code=400, detail="Invalid base64 image") from exc
 
     return classifier.predict(image)
-

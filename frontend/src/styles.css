@@ -25,6 +25,15 @@ button:hover {
   background: #edf2ee;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+button:disabled:hover {
+  background: #ffffff;
+}
+
 .shell {
   display: grid;
   min-height: 100vh;
@@ -102,6 +111,12 @@ h1 {
 .prediction strong {
   font-size: 72px;
   line-height: 1;
+}
+
+.prediction p {
+  margin: 0;
+  color: #5b675f;
+  font-size: 14px;
 }
 
 meter {

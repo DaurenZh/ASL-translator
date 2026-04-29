@@ -4,6 +4,7 @@ import { Camera, Copy, ImageUp, Pause, Play, RotateCcw, Trash2, Volume2 } from "
 import "./styles.css";
 
 const API_URL = "http://localhost:8000";
+const EMPTY_RESULT = { label: "-", confidence: 0, predictions: [] };
 
 function App() {
   const videoRef = useRef(null);
@@ -13,7 +14,7 @@ function App() {
   const lastAcceptedRef = useRef("");
   const [running, setRunning] = useState(false);
   const [sentence, setSentence] = useState("");
-  const [current, setCurrent] = useState({ label: "-", confidence: 0, predictions: [] });
+  const [current, setCurrent] = useState(EMPTY_RESULT);
   const [threshold, setThreshold] = useState(0.85);
   const [voice, setVoice] = useState(false);
   const [status, setStatus] = useState("idle");
@@ -21,11 +22,15 @@ function App() {
   const [uploadResult, setUploadResult] = useState(null);
 
   async function startCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-    streamRef.current = stream;
-    videoRef.current.srcObject = stream;
-    setRunning(true);
-    setStatus("camera");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      streamRef.current = stream;
+      videoRef.current.srcObject = stream;
+      setRunning(true);
+      setStatus("camera");
+    } catch {
+      setStatus("camera blocked");
+    }
   }
 
   function stopCamera() {
@@ -44,6 +49,17 @@ function App() {
       if (label === "del") return value.slice(0, -1);
       return `${value}${label}`;
     });
+
+    if (voice && label !== "space" && label !== "del") speakText(label);
+  }
+
+  function resetPredictions() {
+    lastAcceptedRef.current = "";
+    setCurrent(EMPTY_RESULT);
+    setUploadResult(null);
+    setUploadedImage("");
+    setStatus(running ? "camera" : "idle");
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   async function predictFrame() {
@@ -92,8 +108,9 @@ function App() {
       try {
         const result = await predictImageData(image);
         setUploadResult(result);
-        setCurrent(result);
+        setCurrent(EMPTY_RESULT);
         setStatus(result.ready ? "upload result" : "model missing");
+        if (voice && result.ready && result.confidence >= threshold) speakText(result.label);
       } catch {
         setStatus("api offline");
       }
@@ -107,15 +124,21 @@ function App() {
     return () => clearInterval(timer);
   }, [running, threshold]);
 
-  function speak() {
-    if (!sentence.trim()) return;
-    const utterance = new SpeechSynthesisUtterance(sentence);
+  function speakText(text) {
+    if (!text?.trim()) return;
+    const utterance = new SpeechSynthesisUtterance(text);
     window.speechSynthesis.speak(utterance);
   }
 
-  useEffect(() => {
-    if (voice && sentence.trim()) speak();
-  }, [voice]);
+  function speakCurrent() {
+    const text = sentence.trim() || uploadResult?.label || current.label;
+    if (text && text !== "-") speakText(text);
+  }
+
+  const liveConfidence = Math.round((current.confidence || 0) * 100);
+  const uploadConfidence = Math.round((uploadResult?.confidence || 0) * 100);
+  const uploadAccepted = Boolean(uploadResult?.ready && uploadResult.confidence >= threshold);
+  const canSpeak = Boolean(sentence.trim() || uploadResult?.label || (current.label && current.label !== "-"));
 
   return (
     <main className="shell">
@@ -124,8 +147,8 @@ function App() {
         <canvas ref={canvasRef} hidden />
         <div className="statusBar">
           <span>{status}</span>
-          <strong>{current.label}</strong>
-          <span>{Math.round((current.confidence || 0) * 100)}%</span>
+          <strong>{running ? current.label : "-"}</strong>
+          <span>{running ? `${liveConfidence}%` : "camera off"}</span>
         </div>
       </section>
 
@@ -136,9 +159,9 @@ function App() {
         </div>
 
         <div className="prediction">
-          <span>Current sign</span>
+          <span>Live sign</span>
           <strong>{current.label}</strong>
-          <meter value={current.confidence || 0} min="0" max="1" />
+          <p>{running ? `${liveConfidence}% confidence` : "Start camera to read live signs"}</p>
         </div>
 
         <div className="sentence">{sentence || "..."}</div>
@@ -147,16 +170,16 @@ function App() {
           <button title={running ? "Pause camera" : "Start camera"} onClick={running ? stopCamera : startCamera}>
             {running ? <Pause /> : <Play />}
           </button>
-          <button title="Clear sentence" onClick={() => setSentence("")}>
+          <button title="Clear sentence" disabled={!sentence} onClick={() => setSentence("")}>
             <Trash2 />
           </button>
-          <button title="Copy sentence" onClick={() => navigator.clipboard.writeText(sentence)}>
+          <button title="Copy sentence" disabled={!sentence} onClick={() => navigator.clipboard.writeText(sentence)}>
             <Copy />
           </button>
-          <button title="Speak sentence" onClick={speak}>
+          <button title="Speak current text or result" disabled={!canSpeak} onClick={speakCurrent}>
             <Volume2 />
           </button>
-          <button title="Reset current sign" onClick={() => { lastAcceptedRef.current = ""; setCurrent({ label: "-", confidence: 0, predictions: [] }); }}>
+          <button title="Reset predictions" onClick={resetPredictions}>
             <RotateCcw />
           </button>
           <button title="Upload image" onClick={() => fileRef.current?.click()}>
@@ -171,12 +194,12 @@ function App() {
           <div>
             <span>Uploaded result</span>
             <strong>{uploadResult?.label || "-"}</strong>
-            <p>{Math.round((uploadResult?.confidence || 0) * 100)}%</p>
+            <p>{uploadResult ? `${uploadConfidence}% confidence${uploadAccepted ? "" : " · below threshold"}` : "No image selected"}</p>
           </div>
         </section>
 
         <label className="slider">
-          <span>Sensitivity {Math.round(threshold * 100)}%</span>
+          <span>Acceptance threshold {Math.round(threshold * 100)}%</span>
           <input
             type="range"
             min="0.5"
@@ -189,11 +212,11 @@ function App() {
 
         <label className="toggle">
           <input type="checkbox" checked={voice} onChange={(event) => setVoice(event.target.checked)} />
-          <span>Voice</span>
+          <span>Speak accepted results</span>
         </label>
 
         <div className="topList">
-          {(current.predictions || []).map((item) => (
+          {(uploadResult?.predictions || current.predictions || []).map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
               <strong>{Math.round(item.confidence * 100)}%</strong>

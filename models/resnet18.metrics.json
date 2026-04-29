@@ -1,0 +1,290 @@
+{
+  "dataset": "/content/data/ASL_Alphabet_Dataset/asl_alphabet_train",
+  "output": "/content/asl-translator/models/resnet18.pt",
+  "classes": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "del",
+    "nothing",
+    "space"
+  ],
+  "architecture": "resnet18",
+  "pretrained": false,
+  "trainable_parameters": 11191389,
+  "best_val_accuracy": 0.9861,
+  "test": {
+    "accuracy": 0.9854,
+    "total": 33462,
+    "per_class": [
+      {
+        "class": "A",
+        "accuracy": 0.9919,
+        "count": 1240
+      },
+      {
+        "class": "B",
+        "accuracy": 0.9927,
+        "count": 1241
+      },
+      {
+        "class": "C",
+        "accuracy": 0.9862,
+        "count": 1159
+      },
+      {
+        "class": "D",
+        "accuracy": 0.9914,
+        "count": 1158
+      },
+      {
+        "class": "E",
+        "accuracy": 0.9865,
+        "count": 1109
+      },
+      {
+        "class": "F",
+        "accuracy": 0.9883,
+        "count": 1192
+      },
+      {
+        "class": "G",
+        "accuracy": 0.9839,
+        "count": 1180
+      },
+      {
+        "class": "H",
+        "accuracy": 0.9992,
+        "count": 1241
+      },
+      {
+        "class": "I",
+        "accuracy": 0.9932,
+        "count": 1183
+      },
+      {
+        "class": "J",
+        "accuracy": 0.9936,
+        "count": 1096
+      },
+      {
+        "class": "K",
+        "accuracy": 0.9818,
+        "count": 1153
+      },
+      {
+        "class": "L",
+        "accuracy": 0.9974,
+        "count": 1155
+      },
+      {
+        "class": "M",
+        "accuracy": 0.9305,
+        "count": 1237
+      },
+      {
+        "class": "N",
+        "accuracy": 0.9715,
+        "count": 1228
+      },
+      {
+        "class": "O",
+        "accuracy": 0.9967,
+        "count": 1198
+      },
+      {
+        "class": "P",
+        "accuracy": 0.9947,
+        "count": 1142
+      },
+      {
+        "class": "Q",
+        "accuracy": 1.0,
+        "count": 1224
+      },
+      {
+        "class": "R",
+        "accuracy": 0.995,
+        "count": 1207
+      },
+      {
+        "class": "S",
+        "accuracy": 0.9967,
+        "count": 1226
+      },
+      {
+        "class": "T",
+        "accuracy": 0.9464,
+        "count": 1231
+      },
+      {
+        "class": "U",
+        "accuracy": 0.9722,
+        "count": 1222
+      },
+      {
+        "class": "V",
+        "accuracy": 0.9827,
+        "count": 1156
+      },
+      {
+        "class": "W",
+        "accuracy": 0.9932,
+        "count": 1177
+      },
+      {
+        "class": "X",
+        "accuracy": 0.9721,
+        "count": 1254
+      },
+      {
+        "class": "Y",
+        "accuracy": 0.9952,
+        "count": 1244
+      },
+      {
+        "class": "Z",
+        "accuracy": 0.9914,
+        "count": 1052
+      },
+      {
+        "class": "del",
+        "accuracy": 0.9819,
+        "count": 1051
+      },
+      {
+        "class": "nothing",
+        "accuracy": 0.9892,
+        "count": 462
+      },
+      {
+        "class": "space",
+        "accuracy": 0.9895,
+        "count": 1044
+      }
+    ],
+    "top_mistakes": [
+      {
+        "true": "M",
+        "predicted": "N",
+        "count": 57
+      },
+      {
+        "true": "T",
+        "predicted": "L",
+        "count": 22
+      },
+      {
+        "true": "T",
+        "predicted": "S",
+        "count": 20
+      },
+      {
+        "true": "N",
+        "predicted": "M",
+        "count": 20
+      },
+      {
+        "true": "X",
+        "predicted": "S",
+        "count": 19
+      },
+      {
+        "true": "G",
+        "predicted": "H",
+        "count": 17
+      },
+      {
+        "true": "U",
+        "predicted": "R",
+        "count": 16
+      },
+      {
+        "true": "U",
+        "predicted": "B",
+        "count": 14
+      },
+      {
+        "true": "T",
+        "predicted": "N",
+        "count": 14
+      },
+      {
+        "true": "C",
+        "predicted": "O",
+        "count": 12
+      },
+      {
+        "true": "M",
+        "predicted": "E",
+        "count": 11
+      },
+      {
+        "true": "V",
+        "predicted": "W",
+        "count": 11
+      },
+      {
+        "true": "space",
+        "predicted": "P",
+        "count": 10
+      },
+      {
+        "true": "M",
+        "predicted": "S",
+        "count": 10
+      },
+      {
+        "true": "K",
+        "predicted": "V",
+        "count": 8
+      }
+    ]
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.5022,
+      "train_accuracy": 0.8423,
+      "val_loss": 0.1154,
+      "val_accuracy": 0.9619
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.1157,
+      "train_accuracy": 0.9621,
+      "val_loss": 0.0538,
+      "val_accuracy": 0.9833
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.0725,
+      "train_accuracy": 0.9765,
+      "val_loss": 0.0427,
+      "val_accuracy": 0.9861
+    }
+  ]
+}

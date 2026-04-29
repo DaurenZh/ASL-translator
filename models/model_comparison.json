@@ -1,0 +1,26 @@
+[
+  {
+    "architecture": "resnet18",
+    "pretrained": false,
+    "parameters": 11191389,
+    "best_val_accuracy": 0.9861,
+    "test_accuracy": 0.9854,
+    "metrics": "/content/asl-translator/models/resnet18.metrics.json"
+  },
+  {
+    "architecture": "mobilenet_v3_small",
+    "pretrained": false,
+    "parameters": 1547581,
+    "best_val_accuracy": 0.965,
+    "test_accuracy": 0.9635,
+    "metrics": "/content/asl-translator/models/mobilenet_v3_small.metrics.json"
+  },
+  {
+    "architecture": "simple_cnn",
+    "pretrained": false,
+    "parameters": 1735517,
+    "best_val_accuracy": 0.9487,
+    "test_accuracy": 0.9482,
+    "metrics": "/content/asl-translator/models/simple_cnn.metrics.json"
+  }
+]
