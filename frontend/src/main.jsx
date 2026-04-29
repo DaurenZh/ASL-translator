@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import { Camera, Copy, ImageUp, Pause, Play, RotateCcw, Trash2, Volume2 } from "lucide-react";
 import "./styles.css";
 
 const API_URL = "http://localhost:8000";
 const EMPTY_RESULT = { label: "-", confidence: 0, predictions: [] };
+const SMOOTHING_WINDOW = 10;
+const SMOOTHING_MIN_VOTES = 6;
 
 function App() {
   const videoRef = useRef(null);
@@ -12,14 +15,50 @@ function App() {
   const fileRef = useRef(null);
   const streamRef = useRef(null);
   const lastAcceptedRef = useRef("");
+  const recentPredictionsRef = useRef([]);
+  const handLandmarkerRef = useRef(null);
+  const mediaPipeReadyRef = useRef(false);
+  const mediaPipeLoadingRef = useRef(false);
   const [running, setRunning] = useState(false);
   const [sentence, setSentence] = useState("");
   const [current, setCurrent] = useState(EMPTY_RESULT);
-  const [threshold, setThreshold] = useState(0.85);
+  const [threshold, setThreshold] = useState(0.92);
   const [voice, setVoice] = useState(false);
   const [status, setStatus] = useState("idle");
   const [uploadedImage, setUploadedImage] = useState("");
   const [uploadResult, setUploadResult] = useState(null);
+  const [handCrop, setHandCrop] = useState("initializing");
+
+  async function initMediaPipe() {
+    if (mediaPipeReadyRef.current || mediaPipeLoadingRef.current) return;
+    mediaPipeLoadingRef.current = true;
+    setHandCrop("loading");
+
+    try {
+      const vision = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
+      );
+      handLandmarkerRef.current = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath:
+            "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU",
+        },
+        runningMode: "VIDEO",
+        numHands: 1,
+      });
+      mediaPipeReadyRef.current = true;
+      setHandCrop("ready");
+    } catch {
+      setHandCrop("unavailable");
+    } finally {
+      mediaPipeLoadingRef.current = false;
+    }
+  }
+
+  useEffect(() => {
+    initMediaPipe();
+  }, []);
 
   async function startCamera() {
     try {
@@ -28,6 +67,7 @@ function App() {
       videoRef.current.srcObject = stream;
       setRunning(true);
       setStatus("camera");
+      initMediaPipe();
     } catch {
       setStatus("camera blocked");
     }
@@ -38,6 +78,7 @@ function App() {
     streamRef.current = null;
     setRunning(false);
     setStatus("paused");
+    recentPredictionsRef.current = [];
   }
 
   function applyToken(label) {
@@ -55,6 +96,7 @@ function App() {
 
   function resetPredictions() {
     lastAcceptedRef.current = "";
+    recentPredictionsRef.current = [];
     setCurrent(EMPTY_RESULT);
     setUploadResult(null);
     setUploadedImage("");
@@ -62,15 +104,70 @@ function App() {
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  function makeImageFromSource(source, landmarks = null) {
+    const canvas = canvasRef.current;
+    const width = source.videoWidth || source.naturalWidth || source.width || 640;
+    const height = source.videoHeight || source.naturalHeight || source.height || 480;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = width;
+    let sh = height;
+
+    if (landmarks?.length) {
+      const xs = landmarks.map((point) => point.x * width);
+      const ys = landmarks.map((point) => point.y * height);
+      const minX = Math.max(0, Math.min(...xs));
+      const maxX = Math.min(width, Math.max(...xs));
+      const minY = Math.max(0, Math.min(...ys));
+      const maxY = Math.min(height, Math.max(...ys));
+      const handSize = Math.max(maxX - minX, maxY - minY);
+      const padding = handSize * 0.55;
+
+      sx = Math.max(0, minX - padding);
+      sy = Math.max(0, minY - padding);
+      sw = Math.min(width - sx, maxX - minX + padding * 2);
+      sh = Math.min(height - sy, maxY - minY + padding * 2);
+    }
+
+    canvas.width = 224;
+    canvas.height = 224;
+    canvas.getContext("2d").drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.86);
+  }
+
+  function getSmoothedLabel(result) {
+    if (!result.ready || result.confidence < threshold || result.label === "nothing") {
+      recentPredictionsRef.current = [];
+      return "";
+    }
+
+    recentPredictionsRef.current = [
+      ...recentPredictionsRef.current.slice(-(SMOOTHING_WINDOW - 1)),
+      result.label,
+    ];
+
+    const counts = recentPredictionsRef.current.reduce((acc, label) => {
+      acc[label] = (acc[label] || 0) + 1;
+      return acc;
+    }, {});
+    const [label, count] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0] || [];
+    return count >= SMOOTHING_MIN_VOTES ? label : "";
+  }
+
   async function predictFrame() {
     if (!videoRef.current || !canvasRef.current || !running) return;
-    const canvas = canvasRef.current;
     const video = videoRef.current;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    if (!video.videoWidth || !video.videoHeight) return;
 
-    const image = canvas.toDataURL("image/jpeg", 0.8);
+    let landmarks = null;
+    if (mediaPipeReadyRef.current && handLandmarkerRef.current) {
+      const detection = handLandmarkerRef.current.detectForVideo(video, performance.now());
+      landmarks = detection.landmarks?.[0] || null;
+      setHandCrop(landmarks ? "hand detected" : "no hand");
+    }
+
+    const image = makeImageFromSource(video, landmarks);
     try {
       const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
@@ -79,9 +176,10 @@ function App() {
       });
       const result = await response.json();
       setCurrent(result);
-      setStatus(result.ready ? "live" : "model missing");
-      if (result.confidence >= threshold) applyToken(result.label);
-      if (result.confidence < threshold) lastAcceptedRef.current = "";
+      setStatus(result.ready ? (landmarks ? "live hand crop" : "live full frame") : "model missing");
+      const acceptedLabel = getSmoothedLabel(result);
+      if (acceptedLabel) applyToken(acceptedLabel);
+      if (!acceptedLabel && result.confidence < threshold) lastAcceptedRef.current = "";
     } catch {
       setStatus("api offline");
     }
@@ -139,6 +237,7 @@ function App() {
   const uploadConfidence = Math.round((uploadResult?.confidence || 0) * 100);
   const uploadAccepted = Boolean(uploadResult?.ready && uploadResult.confidence >= threshold);
   const canSpeak = Boolean(sentence.trim() || uploadResult?.label || (current.label && current.label !== "-"));
+  const liveAccepted = Boolean(current.ready && current.confidence >= threshold);
 
   return (
     <main className="shell">
@@ -161,7 +260,11 @@ function App() {
         <div className="prediction">
           <span>Live sign</span>
           <strong>{current.label}</strong>
-          <p>{running ? `${liveConfidence}% confidence` : "Start camera to read live signs"}</p>
+          <p>
+            {running
+              ? `${liveConfidence}% confidence · ${liveAccepted ? "above threshold" : "below threshold"} · ${handCrop}`
+              : "Start camera to read live signs"}
+          </p>
         </div>
 
         <div className="sentence">{sentence || "..."}</div>
