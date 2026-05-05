@@ -1,0 +1,12 @@
+.git
+.venv
+frontend/node_modules
+frontend/dist
+__pycache__
+*.pyc
+notebooks/.ipynb_checkpoints
+models/*.metrics.json
+models/model_comparison.json
+models/simple_cnn.pt
+models/resnet18.pt
+models/mobilenet_v3_small.pt

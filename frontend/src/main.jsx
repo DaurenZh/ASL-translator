@@ -4,7 +4,7 @@ import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import { Camera, Copy, ImageUp, Pause, Play, RotateCcw, Trash2, Volume2 } from "lucide-react";
 import "./styles.css";
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "";
 const EMPTY_RESULT = { label: "-", confidence: 0, predictions: [] };
 const SMOOTHING_WINDOW = 10;
 const SMOOTHING_MIN_VOTES = 6;

@@ -1,8 +1,10 @@
 import base64
 import io
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from PIL import Image
 
@@ -47,3 +49,8 @@ def predict(payload: PredictionRequest):
         raise HTTPException(status_code=400, detail="Invalid base64 image") from exc
 
     return classifier.predict(image)
+
+
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
