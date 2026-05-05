@@ -1,3 +1,12 @@
+---
+title: ASL Translator
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+short_description: ASL alphabet translator with FastAPI, React, and PyTorch
+---
+
 # ASL Translator
 
 Standalone hand-sign translator prototype for ASL alphabet classification.
